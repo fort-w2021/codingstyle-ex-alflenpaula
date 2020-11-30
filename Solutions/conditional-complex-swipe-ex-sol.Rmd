@@ -2,12 +2,6 @@
 
 ![](https://media.giphy.com/media/3ov9jY5zo2kpp7mmQM/giphy.gif)
 
-Vereinfachen Sie folgende Funktion, ohne ihre Funktionsweise zu verändern:  
-
-- werden sie überflüssige *else*-Blöcke los
-- nutzen Sie *early exits* und betonen Sie den *happy path*
-- vereinfachen Sie überflüssige oder redundante Fallunterscheidungen
-
 ```{r, def-swipe-right}
 # Decide whether to swipe right (express interest) or left (express disinterest)
 #   on somebody's profile.
@@ -16,31 +10,24 @@ Vereinfachen Sie folgende Funktion, ohne ihre Funktionsweise zu verändern:
 #   profile: list object representing the profile of the person who is being swiped left or right
 # output: TRUE/FALSE
 swipe_right <- function(swiper, profile) {
-  if (profile[["has_picture"]]) {
-    if (profile[["picture_attractive"]]) {
-      if (swiper[["sober"]]) {
-        if (!all(is.na(profile[["likes"]]))) {
-          if (profile[["rather_weird"]]) {
-            return(FALSE)
-          } else {
-            if (any(swiper[["likes"]] %in% profile[["likes"]])) {
-              return(TRUE)
-            } else {
-              return(FALSE)
-            }
-          }
-        } else {
-          stop("can't decide without informative profile.")
-        }
-      } else {
-        return(TRUE)
-      }
-    } else {
-      return(FALSE)
-    }
-  } else {
+  if (!profile[["has_picture"]]) {
     stop("can't decide without a picture.")
   }
+  
+  if (!profile[["picture_attractive"]]) {
+     return(FALSE)
+  }
+  
+  if ((!swiper[["sober"]]) ||
+      (!profile[["rather_weird"]] & any(swiper[["likes"]] %in% profile[["likes"]]))) {
+    return(TRUE)
+  }
+  
+  if (all(is.na(profile[["likes"]]))) {
+    stop("can't decide without informative profile.")
+  }
+  
+  return(FALSE)
 }
 ```
 
@@ -71,14 +58,33 @@ test_profiles <- list(
 )
 
 # check all combinations:
-for (swiper in names(test_swipers)) {
-  for (profile in names(test_profiles)) {
+for(swiper in names(test_swipers)) {
+  for(profile in names(test_profiles)) {
     cat("Does", swiper, "swipe right on", profile, "?",
         try(swipe_right(test_swipers[[swiper]], test_profiles[[profile]]), silent = TRUE),
         "\n")
   }
 }
 
+# umwandeln in testthat-tests:
+library(testthat)
+test_that("swip right", {
+  expect_true(swipe_right(test_swipers[["sober_swiper"]], test_profiles[["hot_1"]]))
+  expect_false(swipe_right(test_swipers[["sober_swiper"]], test_profiles[["hot_2"]]))
+  expect_false(swipe_right(test_swipers[["sober_swiper"]], test_profiles[["hotweird"]]))
+  expect_false(swipe_right(test_swipers[["sober_swiper"]], test_profiles[["nothot_1"]]))
+  expect_false(swipe_right(test_swipers[["sober_swiper"]], test_profiles[["nothot_2"]]))
+  expect_error(swipe_right(test_swipers[["sober_swiper"]], test_profiles[["no_pic"]]))
+  expect_true(swipe_right(test_swipers[["drunk_swiper"]], test_profiles[["hot_1"]]))
+  expect_true(swipe_right(test_swipers[["drunk_swiper"]], test_profiles[["hot_2"]]))
+  expect_true(swipe_right(test_swipers[["drunk_swiper"]], test_profiles[["hotweird"]]))
+  expect_false(swipe_right(test_swipers[["drunk_swiper"]], test_profiles[["nothot_1"]]))
+  expect_false(swipe_right(test_swipers[["drunk_swiper"]], test_profiles[["nothot_2"]]))
+  expect_error(swipe_right(test_swipers[["drunk_swiper"]], test_profiles[["no_pic"]]))
+})
+
+
+# Entschuldigung fuer die unheimliche Verspaetung!!! :(
 ```
 
 
